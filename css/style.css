@@ -1,3 +1,34 @@
+*{
+    margin:0;
+    padding:0;
+    box-sizing: content-box;
+}
+
 body{
-    background-color:rgb(56, 223, 56);
+    background-color:rgb(248, 234, 31);
+}
+.column_space{
+    width:80%;
+    min-height:150px;
+    display:flex;
+    flex-direction: row;
+    justify-content: space-around;
+    align-items: flex-start;
+    margin:auto;
+
+    border:1px solid black;
+}
+.column{
+    width:80%;
+    min-height: 100px;
+    margin:15px;
+    padding:10px;
+
+    border:1px solid black;
+}
+.column > p:first-child{
+    text-align:center;
+}
+.list{
+
 }
