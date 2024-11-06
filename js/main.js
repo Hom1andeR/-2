@@ -140,6 +140,7 @@ Vue.component('column', {
             if (this.column_id == 'second') {
                 if (this.listsArray.length < 5) {
                     this.listsArray.push(copy);
+                    eventBus.$emit('say-me-count-first');
                 } else {
                     eventBus.$emit('block-first-col');
                 }
@@ -152,6 +153,7 @@ Vue.component('column', {
             eventBus.$on('block-first-col', function () {
                 if (this.column_id == 'first') {
                     this.firstColumnBlock = true;
+
                 }
 
             }.bind(this))
@@ -206,12 +208,12 @@ Vue.component('creator', {
             <div v-if="errors.length" v-for="er in errors">
                 <p class="red-text">{{er}}</p>
             </div>
-            <p><b>Заголовок:</b> <input type="text" v-model="blank.title"></p>
-            <p>Задача - 1: <input type="text" v-model="blank.tasks.task1.name"></p>
-            <p>Задача - 2: <input type="text" v-model="blank.tasks.task2.name"></p>
-            <p>Задача - 3: <input type="text" v-model="blank.tasks.task3.name"></p>
-            <p v-if="!hiddenFlag4">Задача - 4: <input type="text" v-model="blank.tasks.task4.name"></p>
-            <p v-if="!hiddenFlag5">Задача - 5: <input type="text" v-model="blank.tasks.task5.name"></p>
+            <p><b>Заголовок:</b> <input type="text" v-model="blank.title" :disabled="!isActiveForm"></p>
+            <p>Задача - 1: <input type="text" v-model="blank.tasks.task1.name" :disabled="!isActiveForm"></p>
+            <p>Задача - 2: <input type="text" v-model="blank.tasks.task2.name" :disabled="!isActiveForm"></p>
+            <p>Задача - 3: <input type="text" v-model="blank.tasks.task3.name" :disabled="!isActiveForm"></p>
+            <p v-if="!hiddenFlag4">Задача - 4: <input type="text" v-model="blank.tasks.task4.name" :disabled="!isActiveForm"></p>
+            <p v-if="!hiddenFlag5">Задача - 5: <input type="text" v-model="blank.tasks.task5.name" :disabled="!isActiveForm"></p>
             <button v-if="hiddenFlag5" @click.prevent="addTask">+++</button>
             <button  @click.prevent="customSubmit">Добавить</button>
         </form>
@@ -222,6 +224,7 @@ Vue.component('creator', {
             hiddenFlag5: true,
             countInFirst: 0,
             errors: [],
+            isActiveForm: true,
 
             blank: {
                 title: null,
@@ -266,6 +269,10 @@ Vue.component('creator', {
             this.errors = [];
             if (this.countInFirst >= 3) {
                 this.errors.push('В первом столбце может быть максимум 3 записи.');
+            }else if(this.countInFirst == 2){
+                eventBus.$emit('block-form-please');
+            }else{
+                eventBus.$emit('unblock-form-please');
             }
             if (!this.blank.title) {
                 this.errors.push('Заголовок обязателен.')
@@ -312,7 +319,18 @@ Vue.component('creator', {
     mounted() {
         eventBus.$on('say-me-count-first-resp', function (len) {
             this.countInFirst = len;
-        }.bind(this))
+            if( this.countInFirst ==3){
+                this.isActiveForm = true;
+            }
+        }.bind(this)),
+
+            eventBus.$on('block-form-please', ()=>{
+                this.isActiveForm = false;
+            }),
+
+            eventBus.$on('unblock-form-please', ()=>{
+                this.isActiveForm = true;
+            })
     }
 })
 
