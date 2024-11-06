@@ -129,7 +129,7 @@ Vue.component('column', {
 
                 if(this.column_id == 'third'){
                     console.log("Событие добралось до обработчика");
-                    this.beDisable = true;
+                    this.beDisabled = true;
                     this.listsArray.push(copy);
                 }
             }.bind(this)),
