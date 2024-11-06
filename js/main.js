@@ -35,9 +35,9 @@ Vue.component('list_with_tasks', {
     template: `
         <div class="list">
             <h3>{{list.title}}</h3>
-            <p><input type="checkbox" :disabled="beDisabled || block || list.tasks.task1.activity" v-model="list.tasks.task1.activity" @click="checkboxClick">{{list.tasks.task1.name}}</p>
-            <p><input type="checkbox" :disabled="beDisabled || block || list.tasks.task2.activity" v-model="list.tasks.task2.activity" @click="checkboxClick">{{list.tasks.task2.name}}</p>
-            <p><input type="checkbox" :disabled="beDisabled || block || list.tasks.task3.activity" v-model="list.tasks.task3.activity" @click="checkboxClick">{{list.tasks.task3.name}}</p>
+            <p v-if="list.tasks.task1.name"><input type="checkbox" :disabled="beDisabled || block || list.tasks.task1.activity" v-model="list.tasks.task1.activity" @click="checkboxClick">{{list.tasks.task1.name}}</p>
+            <p v-if="list.tasks.task2.name"><input type="checkbox" :disabled="beDisabled || block || list.tasks.task2.activity" v-model="list.tasks.task2.activity" @click="checkboxClick">{{list.tasks.task2.name}}</p>
+            <p v-if="list.tasks.task3.name"><input type="checkbox" :disabled="beDisabled || block || list.tasks.task3.activity" v-model="list.tasks.task3.activity" @click="checkboxClick">{{list.tasks.task3.name}}</p>
             <p v-if="list.tasks.task4.name"><input type="checkbox" :disabled="beDisabled || block || list.tasks.task4.activity" v-model="list.tasks.task4.activity" @click="checkboxClick">{{list.tasks.task4.name}}</p>
             <p v-if="list.tasks.task5.name"><input type="checkbox" :disabled="beDisabled || block || list.tasks.task5.activity" v-model="list.tasks.task5.activity" @click="checkboxClick">{{list.tasks.task5.name}}</p>
             <p v-if="list.dateOfFinish">{{list.dateOfFinish}}</p>
@@ -121,6 +121,7 @@ Vue.component('column', {
         eventBus.$on('takeFromForm', function (copy) {//Вроде работает нормально, данные выводятся в столбце
             if (this.column_id == 'first') {
                 this.listsArray.push(copy);
+
                 let arrayForStorrage = this.listsArray.slice();
                 eventBus.$emit('saveMeInStorage', this.column_id, arrayForStorrage)
 
@@ -184,20 +185,84 @@ Vue.component('column', {
                 this.beDisabled = true;
                 this.listsArray.push(copy);
                 eventBus.$emit('unblock-first-col');
+                eventBus.$emit('scan-first-col');
 
                 let arrayForStorrage = this.listsArray.slice();
                 eventBus.$emit('saveMeInStorage', this.column_id, arrayForStorrage)
             }
         }.bind(this)),
 
-            eventBus.$on('unblock-first-col', function () {
-                if (this.column_id == 'first') {
-                    if (this.firstColumnBlock) {
-                        this.firstColumnBlock = false;
-                    }
-                }
-            }.bind(this))
+            eventBus.$on('scan-first-col', () => {
+                setTimeout(() => {
+                    if(this.column_id == 'first') {
+                        let index = 0;
+                        for(let i of this.listsArray) {
+                            let over = 0;
+                            let act = 0;
+                            for (let taskKey in i.tasks) {
+                                let task = i.tasks[taskKey];
+                                if (task.activity == true) {
+                                    act++;
+                                }
+                                if (task.name != null) {
+                                    over++;
+                                }
+                            }
 
+                            if ((over / act) >= 1.5 && (over / act) <= 2) {
+                                let copy = Object.assign({}, this.listsArray[index]);
+                                copy.tasks = Object.assign({}, this.listsArray[index].tasks);
+                                for(key in copy.tasks){
+                                    copy.tasks[key] = Object.assign({}, this.listsArray[index].tasks[key]);
+                                }
+                                eventBus.$emit('just-push-in-second', copy);
+                                eventBus.$emit('just-del-in-first', index);
+                            }
+                            index++;
+                        }
+                    }
+                }, 100)
+            })
+
+        eventBus.$on('just-push-in-second', (copy)=>{
+            if(this.column_id =='second'){
+                this.listsArray.push(copy);
+                let arrayForStorrage = this.listsArray.slice();
+                eventBus.$emit('saveMeInStorage', this.column_id, arrayForStorrage)
+            }
+        })
+
+        eventBus.$on('just-del-in-first', (index)=>{
+            if(this.column_id == 'first'){
+                this.listsArray.splice(index, 1);
+                let arrayForStorrage = this.listsArray.slice();
+                eventBus.$emit('saveMeInStorage', this.column_id, arrayForStorrage)
+                eventBus.$emit('unblock-form-please');
+
+            }
+        })
+
+        eventBus.$on('unblock-first-col', function () {
+            if (this.column_id == 'first') {
+                if (this.firstColumnBlock) {
+                    this.firstColumnBlock = false;
+                }
+            }
+        }.bind(this))
+
+        eventBus.$on('yes-no-block-form',()=>{//Работает бредово - когда через консоль выводил количество в массиве- выдавал три цифры(срабатывал три раза) с разницей в 1 (не всегда) по возрастанию, последняя была истинной
+            if(this.column_id == 'first'){
+                setTimeout(()=>{
+                    if(this.listsArray.length == 3){
+                        eventBus.$emit('block-form-please');
+                    }else{
+                        eventBus.$emit('unblock-form-please');
+                    }
+                }, 100)
+            }
+
+
+        })
 
     },
 })
@@ -267,19 +332,32 @@ Vue.component('creator', {
         customSubmit() {//Проверил, копирование адекватное, после копирования обнулил болванку, вывел копию в консоль - данные сохранились в копии после сброса болванки.
             eventBus.$emit('say-me-count-first');
             this.errors = [];
-            if (this.countInFirst >= 3) {
-                this.errors.push('В первом столбце может быть максимум 3 записи.');
-            }else if(this.countInFirst == 2){
-                eventBus.$emit('block-form-please');
-            }else{
-                eventBus.$emit('unblock-form-please');
-            }
+
+
+            // if (this.countInFirst >= 3) {
+            //     this.errors.push('В первом столбце может быть максимум 3 записи.');
+            // }else if(this.countInFirst == 2){
+            //     eventBus.$emit('block-form-please');
+            // }else{
+            //     eventBus.$emit('unblock-form-please');
+            // }
+
+
             if (!this.blank.title) {
                 this.errors.push('Заголовок обязателен.')
             }
-            if (!this.blank.tasks.task1.name || !this.blank.tasks.task2.name || !this.blank.tasks.task3.name) {
-                this.errors.push('Первые три поля обязательны к заполнению.')
+
+
+            let counterValidTasks=0;
+            for(let i in this.blank.tasks){
+                if(this.blank.tasks[i].name){
+                    counterValidTasks++;
+                }
             }
+            if(counterValidTasks < 3){
+                this.errors.push('Три поля обязательны к заполнению.')
+            }
+
             if (!this.errors.length) {
                 let copy = Object.assign({}, this.blank);
                 copy.tasks = Object.assign({}, this.blank.tasks);
@@ -312,6 +390,7 @@ Vue.component('creator', {
                     }
                 }
                 eventBus.$emit('takeFromForm', copy);
+                eventBus.$emit('yes-no-block-form');
             }
         }
 
@@ -319,6 +398,7 @@ Vue.component('creator', {
     mounted() {
         eventBus.$on('say-me-count-first-resp', function (len) {
             this.countInFirst = len;
+
             if( this.countInFirst ==3){
                 this.isActiveForm = true;
             }
