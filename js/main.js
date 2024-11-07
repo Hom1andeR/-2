@@ -333,16 +333,6 @@ Vue.component('creator', {
             eventBus.$emit('say-me-count-first');
             this.errors = [];
 
-
-            // if (this.countInFirst >= 3) {
-            //     this.errors.push('В первом столбце может быть максимум 3 записи.');
-            // }else if(this.countInFirst == 2){
-            //     eventBus.$emit('block-form-please');
-            // }else{
-            //     eventBus.$emit('unblock-form-please');
-            // }
-
-
             if (!this.blank.title) {
                 this.errors.push('Заголовок обязателен.')
             }
