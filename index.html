@@ -9,14 +9,35 @@
     <script defer src="js/main.js"></script>
 </head>
 <body>
-<div id="app">
-    <creator></creator>
-    <div class="column_space">
-        <column :column_name="'Новые'" :column_id="'first'"></column>
-        <column :column_name="'В процессе'" :column_id="'second'"></column>
-        <column :column_name="'Сделанные'" :column_id="'third'"></column>
-    </div>
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Task Manager</title>
+    <link rel="stylesheet" href="./css/style.css">
+    <script defer src="js/vue.js"></script>
+    <script defer src="js/main.js"></script>
+    </head>
+    <body>
+    <div id="app">
 
-</div>"
+    <button @click="openModal">Добавить карточку</button>
+    
+
+    <modal v-if="showModal" @close="closeModal">
+    <creator @submit-card="addCard"></creator>
+    </modal>
+    
+
+    <div class="column_space">
+    <column :column_name="'Новые'" :column_id="'first'"></column>
+    <column :column_name="'В процессе'" :column_id="'second'"></column>
+    <column :column_name="'Сделанные'" :column_id="'third'"></column>
+    </div>
+    </div>
+    </body>
+    </html>
+    
 </body>
 </html>
