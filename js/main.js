@@ -42,6 +42,7 @@ Vue.component('list_with_tasks', {
     methods: {
         checkboxClick() {
 
+
             setTimeout(() => {
                 let overalCountTasks = 0;
                 let activeCheckboxes = 0;
@@ -99,7 +100,6 @@ Vue.component('column', {
     data() {
         return {
             listsArray: localStorage[this.column_id] ? JSON.parse(localStorage[this.column_id]) : [],
-            // listsArray: [],
             beDisabled: false,
             firstColumnBlock: false,
         }
@@ -113,7 +113,7 @@ Vue.component('column', {
         </div>
     `,
     mounted() {
-        eventBus.$on('takeFromForm', function (copy) {//Вроде работает нормально, данные выводятся в столбце
+        eventBus.$on('takeFromForm', function (copy) {
             if (this.column_id == 'first') {
                 this.listsArray.push(copy);
 
@@ -176,7 +176,14 @@ Vue.component('column', {
 
         eventBus.$on('move-me-to-third', function (copy) {
             if (this.column_id == 'third') {
-                copy.dateOfFinish = new Date();
+                const formatter = new Intl.DateTimeFormat('ru-RU',{ //Локалиизация русского формата 
+                    day: 'numeric',
+                    month: 'long',
+                    year: 'numeric',
+                    hour: 'numeric',
+                    minute: 'numeric'
+                });
+                copy.dateOfFinish=formatter.format(new Date());
                 this.beDisabled = true;
                 this.listsArray.push(copy);
                 eventBus.$emit('unblock-first-col');
@@ -262,57 +269,50 @@ Vue.component('column', {
     },
 })
 
+Vue.component('modal', {
+template: `
+<div class="modal-overlay">
+<div class="modal-content">
+<span class="close" @click="$emit('close')">&times;</span>
+<slot></slot> <!— Слот для вставки формы —>
+</div>
+</div>
+`,
+});
+
+
 Vue.component('creator', {
     template: `
-        <form>
-            <div v-if="errors.length" v-for="er in errors">
-                <p class="red-text">{{er}}</p>
-            </div>
-            <p><b>Заголовок:</b> <input type="text" v-model="blank.title" :disabled="!isActiveForm"></p>
-            <p>Задача - 1: <input type="text" v-model="blank.tasks.task1.name" :disabled="!isActiveForm"></p>
-            <p>Задача - 2: <input type="text" v-model="blank.tasks.task2.name" :disabled="!isActiveForm"></p>
-            <p>Задача - 3: <input type="text" v-model="blank.tasks.task3.name" :disabled="!isActiveForm"></p>
-            <p v-if="!hiddenFlag4">Задача - 4: <input type="text" v-model="blank.tasks.task4.name" :disabled="!isActiveForm"></p>
-            <p v-if="!hiddenFlag5">Задача - 5: <input type="text" v-model="blank.tasks.task5.name" :disabled="!isActiveForm"></p>
-            <button v-if="hiddenFlag5" @click.prevent="addTask">+++</button>
-            <button  @click.prevent="customSubmit">Добавить</button>
-        </form>
-    `,
+<form @submit.prevent="customSubmit">
+<div v-if="errors.length" class="error-messages">
+<p v-for="er in errors" class="red-text">{{ er }}</p>
+</div>
+<p><b>Заголовок:</b> <input type="text" v-model="blank.title"></p>
+<p>Задача - 1: <input type="text" v-model="blank.tasks.task1.name"></p>
+<p>Задача - 2: <input type="text" v-model="blank.tasks.task2.name"></p>
+<p>Задача - 3: <input type="text" v-model="blank.tasks.task3.name"></p>
+<p v-if="!hiddenFlag4">Задача - 4: <input type="text" v-model="blank.tasks.task4.name"></p>
+<p v-if="!hiddenFlag5">Задача - 5: <input type="text" v-model="blank.tasks.task5.name"></p>
+<button v-if="hiddenFlag5" @click.prevent="addTask">+++</button>
+<button type="submit">Добавить</button>
+</form>
+`,
     data() {
         return {
             hiddenFlag4: true,
             hiddenFlag5: true,
-            countInFirst: 0,
             errors: [],
-            isActiveForm: true,
-
             blank: {
                 title: null,
-                dateOfFinish: null,
                 tasks: {
-                    task1: {
-                        name: null,
-                        activity: false
-                    },
-                    task2: {
-                        name: null,
-                        activity: false
-                    },
-                    task3: {
-                        name: null,
-                        activity: false
-                    },
-                    task4: {
-                        name: null,
-                        activity: false
-                    },
-                    task5: {
-                        name: null,
-                        activity: false
-                    },
+                    task1: { name: null, activity: false },
+                    task2: { name: null, activity: false },
+                    task3: { name: null, activity: false },
+                    task4: { name: null, activity: false },
+                    task5: { name: null, activity: false },
                 }
             }
-        }
+        };
     },
     methods: {
         addTask() {
@@ -322,88 +322,54 @@ Vue.component('creator', {
                 this.hiddenFlag5 = false;
             }
         },
-
-
         customSubmit() {
-            eventBus.$emit('say-me-count-first');
             this.errors = [];
-
             if (!this.blank.title) {
-                this.errors.push('Заголовок обязателен.')
+                this.errors.push('Заголовок обязателен.');
             }
-
-
-            let counterValidTasks=0;
-            for(let i in this.blank.tasks){
-                if(this.blank.tasks[i].name){
-                    counterValidTasks++;
-                }
+            let validTasks = Object.values(this.blank.tasks).filter(task => task.name).length;
+            if (validTasks < 3) {
+                this.errors.push('Три задачи обязательны к заполнению.');
             }
-            if(counterValidTasks < 3){
-                this.errors.push('Три поля обязательны к заполнению.')
-            }
-
             if (!this.errors.length) {
-                let copy = Object.assign({}, this.blank);
-                copy.tasks = Object.assign({}, this.blank.tasks);
-                for (let i in this.blank.tasks) {
-                    copy.tasks[i] = Object.assign({}, this.blank.tasks[i]);
-                }
-                this.blank = {
-                    title: null,
-                    tasks: {
-                        task1: {
-                            name: null,
-                            activity: false
-                        },
-                        task2: {
-                            name: null,
-                            activity: false
-                        },
-                        task3: {
-                            name: null,
-                            activity: false
-                        },
-                        task4: {
-                            name: null,
-                            activity: false
-                        },
-                        task5: {
-                            name: null,
-                            activity: false
-                        },
-                    }
-                }
-                eventBus.$emit('takeFromForm', copy);
-                eventBus.$emit('yes-no-block-form');
+                let copy = JSON.parse(JSON.stringify(this.blank));
+                this.$emit('submit-card', copy); // Отправляем данные в основное приложение
+                this.resetForm();
             }
+        },
+        resetForm() {
+            this.blank = {
+                title: null,
+                tasks: {
+                    task1: { name: null, activity: false },
+                    task2: { name: null, activity: false },
+                    task3: { name: null, activity: false },
+                    task4: { name: null, activity: false },
+                    task5: { name: null, activity: false },
+                }
+            };
+            this.hiddenFlag4 = true;
+            this.hiddenFlag5 = true;
         }
-
-    },
-    mounted() {
-        eventBus.$on('say-me-count-first-resp', function (len) {
-            this.countInFirst = len;
-
-            if( this.countInFirst ==3){
-                this.isActiveForm = true;
-            }
-        }.bind(this)),
-
-            eventBus.$on('block-form-please', ()=>{
-                this.isActiveForm = false;
-            }),
-
-            eventBus.$on('unblock-form-please', ()=>{
-                this.isActiveForm = true;
-            })
     }
-})
+});
 
-let app = new Vue({
+new Vue({
     el: '#app',
-    mounted(){
-        eventBus.$on('saveMeInStorage', (key, value) => {
-            localStorage.setItem(key, JSON.stringify(value));
-        })
+    data: {
+        showModal: false // Управляет видимостью модального окна
+    },
+    methods: {
+        openModal() {
+            this.showModal = true; // Открываем модальное окно
+        },
+        closeModal() {
+            this.showModal = false; // Закрываем модальное окно
+        },
+        addCard(card) {
+            eventBus.$emit('takeFromForm', card); // Передаем данные из формы
+            this.closeModal(); // Закрываем модальное окно после добавления карточки
+        }
     }
-})
+});
+
