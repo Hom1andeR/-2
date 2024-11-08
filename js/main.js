@@ -1,7 +1,3 @@
-
-
-
-
 let eventBus = new Vue();
 
 Vue.component('list_with_tasks', {
@@ -43,9 +39,8 @@ Vue.component('list_with_tasks', {
             <p v-if="list.dateOfFinish">{{list.dateOfFinish}}</p>
         </div>
     `,
-    methods: {//Метод реагирует. Есть подозрение что при дальнейшем написании логики она будет применяться ко всем экземплярам компонента - потому что нет идентификации. Данные изменяются в конкретном объекте не затрагивая сторонние объекты
+    methods: {
         checkboxClick() {
-            // Все работает, НО! почему-то данные вывода в консоль запаздывают на один клик по ЧБ.(исправил поставив задержку)
 
             setTimeout(() => {
                 let overalCountTasks = 0;
@@ -250,7 +245,7 @@ Vue.component('column', {
             }
         }.bind(this))
 
-        eventBus.$on('yes-no-block-form',()=>{//Работает бредово - когда через консоль выводил количество в массиве- выдавал три цифры(срабатывал три раза) с разницей в 1 (не всегда) по возрастанию, последняя была истинной
+        eventBus.$on('yes-no-block-form',()=>{
             if(this.column_id == 'first'){
                 setTimeout(()=>{
                     if(this.listsArray.length == 3){
@@ -329,7 +324,7 @@ Vue.component('creator', {
         },
 
 
-        customSubmit() {//Проверил, копирование адекватное, после копирования обнулил болванку, вывел копию в консоль - данные сохранились в копии после сброса болванки.
+        customSubmit() {
             eventBus.$emit('say-me-count-first');
             this.errors = [];
 
